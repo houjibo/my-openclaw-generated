@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>意图网络可视化</title>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.26.0/dist/cytoscape.umd.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      overflow: hidden;
+    }
+    #header {
+      background: #2d2d2d;
+      padding: 20px;
+      border-bottom: 1px solid #404040;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #888;
+      font-size: 14px;
+    }
+    #network-stats {
+      margin-top: 15px;
+      display: flex;
+      gap: 20px;
+    }
+    .stat {
+      background: #3d3d3d;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .stat-label {
+      color: #888;
+      margin-right: 8px;
+    }
+    .stat-value {
+      color: #4caf50;
+      font-weight: bold;
+    }
+    #cy {
+      width: 100%;
+      height: calc(100vh - 120px);
+      background: #1a1a1a;
+    }
+    #legend {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(45, 45, 45, 0.95);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #404040;
+    }
+    .legend-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+    .legend-color {
+      width: 20px;
+      height: 3px;
+      margin-right: 8px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>🌐 意图网络可视化</h1>
+    <div class="subtitle">意图本体关系图谱</div>
+    <div id="network-stats">
+      <div class="stat">
+        <span class="stat-label">意图数:</span>
+        <span class="stat-value" id="intent-count">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">关系数:</span>
+        <span class="stat-value" id="edge-count">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">场景数:</span>
+        <span class="stat-value" id="scenario-count">0</span>
+      </div>
+    </div>
+  </div>
+  <div id="cy"></div>
+  <div id="legend">
+    <div class="legend-title">关系类型</div>
+    <div class="legend-item">
+      <div class="legend-color" style="background: #4caf50;"></div>
+      <span>下一步 (Next Step)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background: #2196f3;"></div>
+      <span>前置条件 (Prerequisite)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background: #ff9800;"></div>
+      <span>替代方案 (Alternative)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background: #9e9e9e;"></div>
+      <span>相关 (Related)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background: #f44336;"></div>
+      <span>冲突 (Conflict)</span>
+    </div>
+  </div>
+
+  <script>
+    async function loadNetworkData() {
+      try {
+        const response = await fetch('output/intent-network.json');
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('加载网络数据失败:', error);
+        return { intents: [], edges: [] };
+      }
+    }
+
+    async function init() {
+      const data = await loadNetworkData();
+
+      document.getElementById('intent-count').textContent = data.intents.length;
+      document.getElementById('edge-count').textContent = data.edges.length;
+
+      const categories = [...new Set(data.intents.map(i => i.category))];
+      document.getElementById('scenario-count').textContent = categories.length;
+
+      const categoryColors = {
+        folder: '#ff9800',
+        maven: '#4caf50',
+        nodejs: '#2196f3',
+        unknown: '#9e9e9e'
+      };
+
+      const edgeColors = {
+        next_step: '#4caf50',
+        prerequisite: '#2196f3',
+        alternative: '#ff9800',
+        related: '#9e9e9e',
+        conflict: '#f44336',
+        requires: '#9c27b0'
+      };
+
+      const elements = [];
+
+      data.intents.forEach(intent => {
+        elements.push({
+          group: 'nodes',
+          data: {
+            id: intent.id,
+            label: intent.name,
+            category: intent.category,
+            color: categoryColors[intent.category] || '#9e9e9e'
+          }
+        });
+      });
+
+      data.edges.forEach(edge => {
+        elements.push({
+          group: 'edges',
+          data: {
+            source: edge.from,
+            target: edge.to,
+            type: edge.type,
+            weight: edge.weight,
+            color: edgeColors[edge.type] || '#9e9e9e',
+            width: Math.max(1, edge.weight * 3),
+            label: (edge.weight * 100).toFixed(0) + '%'
+          }
+        });
+      });
+
+      const cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: elements,
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': 'data(color)',
+              'label': 'data(label)',
+              'color': '#fff',
+              'text-valign': 'center',
+              'text-halign': 'center',
+              'font-size': '12px',
+              'width': 'label',
+              'height': 'label',
+              'padding': '10px',
+              'text-wrap': 'wrap',
+              'text-max-width': '100px',
+              'border-width': 2,
+              'border-color': '#555'
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              'width': 'data(width)',
+              'line-color': 'data(color)',
+              'target-arrow-color': 'data(color)',
+              'target-arrow-shape': 'triangle',
+              'curve-style': 'bezier',
+              'arrow-scale': 1.2,
+              'label': 'data(label)',
+              'font-size': '10px',
+              'text-rotation': 'autorotate',
+              'text-margin-y': -10,
+              'color': '#888'
+            }
+          },
+          {
+            selector: 'node:selected',
+            style: {
+              'border-width': 4,
+              'border-color': '#fff'
+            }
+          },
+          {
+            selector: 'edge:selected',
+            style: {
+              'line-color': '#fff',
+              'target-arrow-color': '#fff'
+            }
+          }
+        ],
+        layout: {
+          name: 'cose',
+          animate: true,
+          animationDuration: 1000,
+          nodeRepulsion: 4000,
+          nodeDimensionsIncludeLabels: true,
+          idealEdgeLength: 100
+        },
+        wheelSensitivity: 0.3
+      });
+
+      cy.on('tap', 'node', function(evt) {
+        const node = evt.target;
+        const intentId = node.id();
+        const intent = data.intents.find(i => i.id === intentId);
+
+        if (intent) {
+          const message = [
+            '📋 ' + intent.name,
+            '',
+            '分类: ' + intent.category,
+            '描述: ' + intent.description,
+            '',
+            '参数:'
+          ].join('\n');
+
+          intent.parameters.forEach(param => {
+            message += '\n  • ' + param.name + ' (' + param.type + ')';
+          });
+
+          message += '\n\n可执行的动作:';
+          intent.actions.forEach(action => {
+            message += '\n  • ' + action.name;
+          });
+
+          alert(message);
+        }
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

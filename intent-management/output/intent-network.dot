@@ -1,0 +1,31 @@
+digraph IntentNetwork {
+  rankdir=LR;
+  node [shape=box];
+
+  "open_folder" [label="打开文件夹"];
+  "explore_folder" [label="探索文件夹"];
+  "compress_folder" [label="压缩文件夹"];
+  "delete_folder" [label="删除文件夹"];
+  "analyze_content" [label="分析项目内容"];
+  "analyze_dependencies" [label="分析依赖"];
+  "test_project" [label="运行测试"];
+  "build_project" [label="构建项目"];
+  "analyze_package" [label="分析 package.json"];
+  "install_dependencies" [label="安装依赖"];
+  "test_nodejs" [label="运行测试"];
+  "build_nodejs" [label="构建项目"];
+
+  "explore_folder" -> "open_folder" [style=bold, color=green] [label="0.80"];
+  "explore_folder" -> "compress_folder" [style=bold, color=green] [label="0.60"];
+  "open_folder" -> "explore_folder" [style=solid, color=gray] [label="0.70"];
+  "delete_folder" -> "compress_folder" [style=bold, color=red] [label="1.00"];
+  "analyze_content" -> "analyze_dependencies" [style=bold, color=green] [label="0.90"];
+  "analyze_content" -> "build_project" [style=bold, color=green] [label="0.80"];
+  "analyze_dependencies" -> "build_project" [style=bold, color=green] [label="0.90"];
+  "test_project" -> "build_project" [style=dashed, color=blue] [label="1.00"];
+  "analyze_content" -> "test_project" [style=bold, color=green] [label="0.70"];
+  "analyze_package" -> "install_dependencies" [style=bold, color=green] [label="0.90"];
+  "analyze_package" -> "test_nodejs" [style=bold, color=green] [label="0.70"];
+  "install_dependencies" -> "build_nodejs" [style=bold, color=green] [label="0.90"];
+  "test_nodejs" -> "build_nodejs" [style=dashed, color=blue] [label="1.00"];
+}

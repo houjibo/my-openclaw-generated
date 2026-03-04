@@ -1,0 +1,526 @@
+{
+  "intents": [
+    {
+      "id": "open_folder",
+      "name": "打开文件夹",
+      "category": "folder",
+      "confidence": 0,
+      "description": "在文件管理器中打开指定文件夹",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "path",
+          "required": true,
+          "description": "文件夹路径"
+        }
+      ],
+      "actions": [
+        {
+          "id": "open",
+          "name": "打开文件夹",
+          "description": "使用系统默认方式打开文件夹"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "view",
+          "basic"
+        ],
+        "priority": 1,
+        "cost": 0.1
+      }
+    },
+    {
+      "id": "explore_folder",
+      "name": "探索文件夹",
+      "category": "folder",
+      "confidence": 0,
+      "description": "查看文件夹内容和结构",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "path",
+          "required": true,
+          "description": "文件夹路径"
+        },
+        {
+          "name": "recursive",
+          "type": "boolean",
+          "required": false,
+          "description": "是否递归显示子目录",
+          "defaultValue": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "explore",
+          "name": "探索文件夹",
+          "description": "列出文件夹内容"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "view",
+          "analysis"
+        ],
+        "priority": 2,
+        "cost": 0.2
+      }
+    },
+    {
+      "id": "compress_folder",
+      "name": "压缩文件夹",
+      "category": "folder",
+      "confidence": 0,
+      "description": "将文件夹压缩为 ZIP 文件",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "path",
+          "required": true,
+          "description": "要压缩的文件夹路径"
+        },
+        {
+          "name": "output",
+          "type": "path",
+          "required": false,
+          "description": "输出的 ZIP 文件路径",
+          "defaultValue": ""
+        }
+      ],
+      "actions": [
+        {
+          "id": "compress",
+          "name": "压缩文件夹",
+          "description": "使用 zip 命令压缩文件夹"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "archive",
+          "transform"
+        ],
+        "priority": 3,
+        "cost": 0.5
+      }
+    },
+    {
+      "id": "delete_folder",
+      "name": "删除文件夹",
+      "category": "folder",
+      "confidence": 0,
+      "description": "删除指定文件夹及其所有内容",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "path",
+          "required": true,
+          "description": "文件夹路径"
+        },
+        {
+          "name": "confirm",
+          "type": "boolean",
+          "required": false,
+          "description": "确认删除（需要用户确认）",
+          "defaultValue": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "delete",
+          "name": "删除文件夹",
+          "description": "递归删除文件夹"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "dangerous",
+          "destructive"
+        ],
+        "priority": 10,
+        "cost": 0.1,
+        "risk": 0.9
+      }
+    },
+    {
+      "id": "analyze_content",
+      "name": "分析项目内容",
+      "category": "maven",
+      "confidence": 0,
+      "description": "分析 POM 文件的内容，提取项目信息",
+      "parameters": [
+        {
+          "name": "pomPath",
+          "type": "path",
+          "required": true,
+          "description": "POM 文件路径"
+        }
+      ],
+      "actions": [
+        {
+          "id": "analyze",
+          "name": "分析内容",
+          "description": "解析 POM 文件，提取关键信息"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "analysis",
+          "basic"
+        ],
+        "priority": 1,
+        "cost": 0.1
+      }
+    },
+    {
+      "id": "analyze_dependencies",
+      "name": "分析依赖",
+      "category": "maven",
+      "confidence": 0,
+      "description": "分析 Maven 项目的依赖关系",
+      "parameters": [
+        {
+          "name": "pomPath",
+          "type": "path",
+          "required": true,
+          "description": "POM 文件路径"
+        },
+        {
+          "name": "format",
+          "type": "string",
+          "required": false,
+          "description": "输出格式（tree/json）",
+          "defaultValue": "json"
+        }
+      ],
+      "actions": [
+        {
+          "id": "analyze",
+          "name": "分析依赖",
+          "description": "使用 mvn dependency:tree 分析依赖"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "analysis",
+          "build"
+        ],
+        "priority": 2,
+        "cost": 0.5
+      }
+    },
+    {
+      "id": "test_project",
+      "name": "运行测试",
+      "category": "maven",
+      "confidence": 0,
+      "description": "运行 Maven 项目的测试",
+      "parameters": [
+        {
+          "name": "pomPath",
+          "type": "path",
+          "required": true,
+          "description": "POM 文件路径"
+        }
+      ],
+      "actions": [
+        {
+          "id": "test",
+          "name": "运行测试",
+          "description": "执行 mvn test"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "build",
+          "verify"
+        ],
+        "priority": 3,
+        "cost": 1
+      }
+    },
+    {
+      "id": "build_project",
+      "name": "构建项目",
+      "category": "maven",
+      "confidence": 0,
+      "description": "使用 Maven 构建项目",
+      "parameters": [
+        {
+          "name": "pomPath",
+          "type": "path",
+          "required": true,
+          "description": "POM 文件路径"
+        },
+        {
+          "name": "skipTests",
+          "type": "boolean",
+          "required": false,
+          "description": "是否跳过测试",
+          "defaultValue": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "build",
+          "name": "构建项目",
+          "description": "执行 mvn compile 或 mvn package"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "build",
+          "package"
+        ],
+        "priority": 4,
+        "cost": 2
+      }
+    },
+    {
+      "id": "analyze_package",
+      "name": "分析 package.json",
+      "category": "nodejs",
+      "confidence": 0,
+      "description": "分析 package.json 的内容和依赖",
+      "parameters": [
+        {
+          "name": "packagePath",
+          "type": "path",
+          "required": true,
+          "description": "package.json 文件路径"
+        }
+      ],
+      "actions": [
+        {
+          "id": "analyze",
+          "name": "分析内容",
+          "description": "解析 package.json，提取关键信息"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "analysis",
+          "basic"
+        ],
+        "priority": 1,
+        "cost": 0.1
+      }
+    },
+    {
+      "id": "install_dependencies",
+      "name": "安装依赖",
+      "category": "nodejs",
+      "confidence": 0,
+      "description": "安装项目的依赖",
+      "parameters": [
+        {
+          "name": "packagePath",
+          "type": "path",
+          "required": true,
+          "description": "package.json 文件路径"
+        },
+        {
+          "name": "dev",
+          "type": "boolean",
+          "required": false,
+          "description": "是否安装开发依赖",
+          "defaultValue": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "install",
+          "name": "安装依赖",
+          "description": "运行 npm install"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "build",
+          "setup"
+        ],
+        "priority": 2,
+        "cost": 2
+      }
+    },
+    {
+      "id": "test_nodejs",
+      "name": "运行测试",
+      "category": "nodejs",
+      "confidence": 0,
+      "description": "运行项目的测试",
+      "parameters": [
+        {
+          "name": "packagePath",
+          "type": "path",
+          "required": true,
+          "description": "package.json 文件路径"
+        }
+      ],
+      "actions": [
+        {
+          "id": "test",
+          "name": "运行测试",
+          "description": "运行 npm test"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "build",
+          "verify"
+        ],
+        "priority": 3,
+        "cost": 1
+      }
+    },
+    {
+      "id": "build_nodejs",
+      "name": "构建项目",
+      "category": "nodejs",
+      "confidence": 0,
+      "description": "构建 Node.js 项目",
+      "parameters": [
+        {
+          "name": "packagePath",
+          "type": "path",
+          "required": true,
+          "description": "package.json 文件路径"
+        }
+      ],
+      "actions": [
+        {
+          "id": "build",
+          "name": "构建项目",
+          "description": "运行 npm run build"
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "build",
+          "package"
+        ],
+        "priority": 4,
+        "cost": 2
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "explore_folder",
+      "to": "open_folder",
+      "type": "next_step",
+      "weight": 0.8,
+      "metadata": {
+        "reason": "探索后可能想打开"
+      }
+    },
+    {
+      "from": "explore_folder",
+      "to": "compress_folder",
+      "type": "next_step",
+      "weight": 0.6,
+      "metadata": {
+        "reason": "探索后可能想压缩"
+      }
+    },
+    {
+      "from": "open_folder",
+      "to": "explore_folder",
+      "type": "related",
+      "weight": 0.7,
+      "metadata": {
+        "reason": "打开后可能想探索"
+      }
+    },
+    {
+      "from": "delete_folder",
+      "to": "compress_folder",
+      "type": "conflict",
+      "weight": 1,
+      "metadata": {
+        "reason": "删除和压缩不能同时执行"
+      }
+    },
+    {
+      "from": "analyze_content",
+      "to": "analyze_dependencies",
+      "type": "next_step",
+      "weight": 0.9,
+      "metadata": {
+        "reason": "分析内容后通常需要分析依赖"
+      }
+    },
+    {
+      "from": "analyze_content",
+      "to": "build_project",
+      "type": "next_step",
+      "weight": 0.8,
+      "metadata": {
+        "reason": "分析内容后可能要构建"
+      }
+    },
+    {
+      "from": "analyze_dependencies",
+      "to": "build_project",
+      "type": "next_step",
+      "weight": 0.9,
+      "metadata": {
+        "reason": "分析依赖后通常要构建"
+      }
+    },
+    {
+      "from": "test_project",
+      "to": "build_project",
+      "type": "prerequisite",
+      "weight": 1,
+      "metadata": {
+        "reason": "测试通过后才能构建"
+      }
+    },
+    {
+      "from": "analyze_content",
+      "to": "test_project",
+      "type": "next_step",
+      "weight": 0.7,
+      "metadata": {
+        "reason": "分析内容后可能要测试"
+      }
+    },
+    {
+      "from": "analyze_package",
+      "to": "install_dependencies",
+      "type": "next_step",
+      "weight": 0.9,
+      "metadata": {
+        "reason": "分析后通常需要安装依赖"
+      }
+    },
+    {
+      "from": "analyze_package",
+      "to": "test_nodejs",
+      "type": "next_step",
+      "weight": 0.7,
+      "metadata": {
+        "reason": "分析后可能需要测试"
+      }
+    },
+    {
+      "from": "install_dependencies",
+      "to": "build_nodejs",
+      "type": "next_step",
+      "weight": 0.9,
+      "metadata": {
+        "reason": "安装依赖后通常要构建"
+      }
+    },
+    {
+      "from": "test_nodejs",
+      "to": "build_nodejs",
+      "type": "prerequisite",
+      "weight": 1,
+      "metadata": {
+        "reason": "测试通过后才能构建"
+      }
+    }
+  ]
+}

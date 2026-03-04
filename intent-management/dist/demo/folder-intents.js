@@ -1,0 +1,198 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.folderIntents = void 0;
+const fs = __importStar(require("fs/promises"));
+const child_process_1 = require("child_process");
+const util_1 = require("util");
+const execAsync = (0, util_1.promisify)(child_process_1.exec);
+/**
+ * 文件夹场景的意图定义
+ */
+exports.folderIntents = [
+    {
+        id: 'open_folder',
+        name: '打开文件夹',
+        category: 'folder',
+        confidence: 0,
+        description: '在文件管理器中打开指定文件夹',
+        parameters: [
+            {
+                name: 'path',
+                type: 'path',
+                required: true,
+                description: '文件夹路径'
+            }
+        ],
+        actions: [
+            {
+                id: 'open',
+                name: '打开文件夹',
+                description: '使用系统默认方式打开文件夹',
+                execute: async (params) => {
+                    const { path: folderPath } = params;
+                    await execAsync(`open "${folderPath}"`);
+                    return { success: true, message: `已打开: ${folderPath}` };
+                }
+            }
+        ]
+    },
+    {
+        id: 'delete_folder',
+        name: '删除文件夹',
+        category: 'folder',
+        confidence: 0,
+        description: '删除指定文件夹及其所有内容',
+        parameters: [
+            {
+                name: 'path',
+                type: 'path',
+                required: true,
+                description: '文件夹路径'
+            },
+            {
+                name: 'confirm',
+                type: 'boolean',
+                required: false,
+                description: '确认删除（需要用户确认）',
+                defaultValue: false
+            }
+        ],
+        actions: [
+            {
+                id: 'delete',
+                name: '删除文件夹',
+                description: '递归删除文件夹',
+                execute: async (params) => {
+                    const { path: folderPath, confirm } = params;
+                    if (!confirm) {
+                        return {
+                            success: false,
+                            message: '删除操作需要确认，请设置 confirm=true'
+                        };
+                    }
+                    await execAsync(`rm -rf "${folderPath}"`);
+                    return { success: true, message: `已删除: ${folderPath}` };
+                }
+            }
+        ],
+        metadata: {
+            tags: ['dangerous', 'needs_confirmation'],
+            priority: 1
+        }
+    },
+    {
+        id: 'compress_folder',
+        name: '压缩文件夹',
+        category: 'folder',
+        confidence: 0,
+        description: '将文件夹压缩为 ZIP 文件',
+        parameters: [
+            {
+                name: 'path',
+                type: 'path',
+                required: true,
+                description: '要压缩的文件夹路径'
+            },
+            {
+                name: 'output',
+                type: 'path',
+                required: false,
+                description: '输出的 ZIP 文件路径',
+                defaultValue: ''
+            }
+        ],
+        actions: [
+            {
+                id: 'compress',
+                name: '压缩文件夹',
+                description: '使用 zip 命令压缩文件夹',
+                execute: async (params) => {
+                    const { path: folderPath, output } = params;
+                    const outputPath = output || `${folderPath}.zip`;
+                    await execAsync(`zip -r "${outputPath}" "${folderPath}"`);
+                    return {
+                        success: true,
+                        message: `已压缩: ${folderPath} -> ${outputPath}`
+                    };
+                }
+            }
+        ]
+    },
+    {
+        id: 'explore_folder',
+        name: '探索文件夹',
+        category: 'folder',
+        confidence: 0,
+        description: '查看文件夹内容和结构',
+        parameters: [
+            {
+                name: 'path',
+                type: 'path',
+                required: true,
+                description: '文件夹路径'
+            },
+            {
+                name: 'recursive',
+                type: 'boolean',
+                required: false,
+                description: '是否递归显示子目录',
+                defaultValue: false
+            }
+        ],
+        actions: [
+            {
+                id: 'explore',
+                name: '探索文件夹',
+                description: '列出文件夹内容',
+                execute: async (params) => {
+                    const { path: folderPath, recursive } = params;
+                    const items = await fs.readdir(folderPath, { withFileTypes: true });
+                    const contents = items.map(item => ({
+                        name: item.name,
+                        isDirectory: item.isDirectory(),
+                        isFile: item.isFile()
+                    }));
+                    return {
+                        success: true,
+                        message: `文件夹 ${folderPath} 的内容`,
+                        data: contents
+                    };
+                }
+            }
+        ]
+    }
+];
+//# sourceMappingURL=folder-intents.js.map

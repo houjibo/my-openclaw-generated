@@ -1,0 +1,30 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: file-manager-agent
+
+# LLM Configuration
+moonshot:
+  api:
+    key: ${MOONSHOT_API_KEY:}
+    url: https://api.moonshot.cn/v1
+    model: kimi-k2.5
+
+openai:
+  api:
+    key: ${OPENAI_API_KEY:}
+    model: gpt-4o
+
+# Agent Configuration
+agent:
+  default-provider: moonshot
+  default-model: kimi-k2.5
+  workspace: ${user.home}/.file-manager-agent
+
+# Logging
+logging:
+  level:
+    com.cola.filemanager: INFO
+    com.cola.agent: INFO

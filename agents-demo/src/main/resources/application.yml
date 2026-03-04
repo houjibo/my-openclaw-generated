@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: agents-demo
+
+# Agent Configuration
+agent:
+  workspace: ${user.home}/.agents-demo
+  agents-dir: classpath:agents
+
+# LLM Configuration
+moonshot:
+  api:
+    key: ${MOONSHOT_API_KEY:}
+    url: https://api.moonshot.cn/v1
+    model: kimi-k2.5
+
+# Logging
+logging:
+  level:
+    com.cola.agents.demo: INFO
+    com.cola.agent: DEBUG

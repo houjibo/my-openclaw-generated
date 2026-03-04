@@ -1,0 +1,82 @@
+# Agent Registry Configuration
+# Defines available agents and their default settings
+
+agents:
+  # Default assistant for general tasks
+  - id: assistant
+    name: Assistant
+    description: General-purpose AI assistant
+    enabled: true
+    default: true
+    file: assistant.md
+    
+  # File management specialist
+  - id: file-manager
+    name: File Manager
+    description: Manages files and directories
+    enabled: true
+    default: false
+    file: file-manager.md
+    capabilities:
+      - file_operations
+      - directory_management
+      - file_search
+    
+  # Research specialist
+  - id: researcher
+    name: Researcher
+    description: Conducts deep research and analysis
+    enabled: true
+    default: false
+    file: researcher.md
+    capabilities:
+      - research
+      - analysis
+      - trend_tracking
+      - comparative_studies
+    
+  # Code development specialist
+  - id: coder
+    name: Coder
+    description: Java development and code review
+    enabled: true
+    default: false
+    file: coder.md
+    capabilities:
+      - java_development
+      - code_review
+      - architecture_design
+      - refactoring
+    
+  # Technical writing specialist
+  - id: writer
+    name: Writer
+    description: Technical documentation and content
+    enabled: true
+    default: false
+    file: writer.md
+    capabilities:
+      - documentation
+      - technical_writing
+      - editing
+      - content_creation
+
+# Default settings
+defaults:
+  provider: moonshot
+  model: kimi-k2.5
+  temperature: 0.7
+  max_tokens: 4000
+
+# Capability routing
+routing:
+  file_operations:
+    - file-manager
+  code_development:
+    - coder
+  research:
+    - researcher
+  writing:
+    - writer
+  general:
+    - assistant
