@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  captain:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: lobster-captain
+    hostname: captain
+    environment:
+      - LOBSTER_ROLE=captain
+      - LOBSTER_TEAM=team-alpha
+      - LOBSTER_NAME=captain-1
+      - CONFIG_REPO=https://github.com/houjibo/lobster-squad-config.git
+    ports:
+      - "18790:18789"
+    networks:
+      - lobster-squad-network
+    restart: unless-stopped
+    volumes:
+      - captain-data:/app/.openclaw
+
+  coder-1:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: lobster-coder-1
+    hostname: coder-1
+    environment:
+      - LOBSTER_ROLE=swe
+      - LOBSTER_TEAM=team-alpha
+      - LOBSTER_NAME=coder-1
+      - CONFIG_REPO=https://github.com/houjibo/lobster-squad-config.git
+    ports:
+      - "18791:18789"
+    networks:
+      - lobster-squad-network
+    restart: unless-stopped
+    volumes:
+      - coder-1-data:/app/.openclaw
+
+  tester-1:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: lobster-tester-1
+    hostname: tester-1
+    environment:
+      - LOBSTER_ROLE=te
+      - LOBSTER_TEAM=team-alpha
+      - LOBSTER_NAME=tester-1
+      - CONFIG_REPO=https://github.com/houjibo/lobster-squad-config.git
+    ports:
+      - "18792:18789"
+    networks:
+      - lobster-squad-network
+    restart: unless-stopped
+    volumes:
+      - tester-1-data:/app/.openclaw
+
+networks:
+  lobster-squad-network:
+    driver: bridge
+
+volumes:
+  captain-data:
+  coder-1-data:
+  tester-1-data:

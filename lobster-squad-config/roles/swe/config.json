@@ -1,0 +1,40 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "moonshot/kimi-k2.5",
+        "fallbacks": ["moonshot/kimi-k2-thinking"]
+      },
+      "models": {
+        "moonshot/kimi-k2.5": {
+          "alias": "Kimi"
+        },
+        "moonshot/kimi-k2-thinking": {
+          "alias": "Kimi-Thinking"
+        }
+      },
+      "compaction": {
+        "mode": "safeguard"
+      }
+    }
+  },
+  "tools": {
+    "profile": "full",
+    "allow": ["*"],
+    "exec": {
+      "pathPrepend": [
+        "/usr/local/bin",
+        "/usr/bin",
+        "/bin"
+      ]
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "0.0.0.0",
+    "auth": {
+      "mode": "none"
+    }
+  }
+}

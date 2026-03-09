@@ -1,0 +1,59 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "moonshot/kimi-k2-thinking",
+        "fallbacks": ["moonshot/kimi-k2.5"]
+      },
+      "models": {
+        "moonshot/kimi-k2-thinking": {
+          "alias": "Kimi-Thinking"
+        },
+        "moonshot/kimi-k2.5": {
+          "alias": "Kimi"
+        }
+      },
+      "compaction": {
+        "mode": "safeguard"
+      }
+    }
+  },
+  "tools": {
+    "profile": "full",
+    "allow": ["*"],
+    "exec": {
+      "pathPrepend": [
+        "/usr/local/bin",
+        "/usr/bin",
+        "/bin"
+      ]
+    }
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": {
+          "enabled": true
+        },
+        "bootstrap-extra-files": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        },
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "0.0.0.0",
+    "auth": {
+      "mode": "none"
+    }
+  }
+}
