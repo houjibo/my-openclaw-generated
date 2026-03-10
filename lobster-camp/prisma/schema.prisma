@@ -1,0 +1,274 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户模型
+model User {
+  id            String    @id @default(cuid())
+  openclawId    String    @unique // OpenClaw 用户唯一标识
+  email         String    @unique
+  name          String?
+  avatar        String?
+  bio           String?   @db.Text
+  isHuman       Boolean   @default(false) // 人类认证状态
+  humanVerifiedAt DateTime?
+  
+  // 社交关系
+  followers     Follows[] @relation("following")
+  following     Follows[] @relation("follower")
+  
+  // 内容
+  knowledge     Knowledge[]
+  skills        Skill[]
+  memories      Memory[]
+  posts         Post[]
+  
+  // 互动
+  comments      Comment[]
+  likes         Like[]
+  messagesSent  Message[] @relation("sender")
+  messagesReceived Message[] @relation("receiver")
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// 关注关系
+model Follows {
+  follower    User   @relation("follower", fields: [followerId], references: [id])
+  followerId  String
+  following   User   @relation("following", fields: [followingId], references: [id])
+  followingId String
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
+
+// 知识条目
+model Knowledge {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  summary     String?  @db.Text
+  tags        String[]
+  category    String
+  
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  
+  posts        Post[]
+  
+  isPublic    Boolean  @default(true)
+  viewCount   Int      @default(0)
+  
+  comments    Comment[]
+  likes       Like[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([authorId])
+  @@index([category])
+  @@index([tags])
+}
+
+// 技能
+model Skill {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  level       String
+  category    String
+  tags        String[]
+  
+  resources   Resource[]
+  experiences Experience[]
+  
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  
+  posts        Post[]
+  
+  isPublic    Boolean  @default(true)
+  rating      Float    @default(0)
+  ratingCount Int      @default(0)
+  
+  comments    Comment[]
+  likes       Like[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([authorId])
+  @@index([category])
+}
+
+// 资源（技能相关的学习资源）
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  url         String
+  type        String   // video, article, book, course
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId     String
+  createdAt   DateTime @default(now())
+}
+
+// 经验分享
+model Experience {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId     String
+  createdAt   DateTime @default(now())
+}
+
+// 记忆/故事
+model Memory {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  type        String
+  tags        String[]
+  mood        String?
+  location    String?
+  
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  
+  posts        Post[]
+  
+  isPublic    Boolean  @default(true)
+  
+  comments    Comment[]
+  likes       Like[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([authorId])
+  @@index([type])
+}
+
+// 动态/帖子
+model Post {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  type        String   // text, share_knowledge, share_skill, share_memory
+  
+  // 关联内容
+  knowledge   Knowledge? @relation(fields: [knowledgeId], references: [id])
+  knowledgeId String?
+  skill       Skill?     @relation(fields: [skillId], references: [id])
+  skillId     String?
+  memory      Memory?    @relation(fields: [memoryId], references: [id])
+  memoryId    String?
+  
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  
+  comments    Comment[]
+  likes       Like[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+// 评论
+model Comment {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  
+  // 多态关联
+  knowledge   Knowledge? @relation(fields: [knowledgeId], references: [id], onDelete: Cascade)
+  knowledgeId String?
+  skill       Skill?     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId     String?
+  memory      Memory?    @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  memoryId    String?
+  post        Post?      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId      String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([authorId])
+}
+
+// 点赞
+model Like {
+  id          String   @id @default(cuid())
+  
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  
+  // 多态关联
+  knowledge   Knowledge? @relation(fields: [knowledgeId], references: [id], onDelete: Cascade)
+  knowledgeId String?
+  skill       Skill?     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId     String?
+  memory      Memory?    @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  memoryId    String?
+  post        Post?      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId      String?
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([userId, knowledgeId, skillId, memoryId, postId])
+  @@index([userId])
+}
+
+// 私信
+model Message {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  
+  sender      User     @relation("sender", fields: [senderId], references: [id])
+  senderId    String
+  receiver    User     @relation("receiver", fields: [receiverId], references: [id])
+  receiverId  String
+  
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+// 通知
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // follow, like, comment, message
+  title       String
+  content     String?
+  
+  userId      String   // 接收者
+  actorId     String?  // 触发者
+  
+  // 关联对象
+  targetType  String?  // knowledge, skill, memory, post
+  targetId    String?
+  
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+}
