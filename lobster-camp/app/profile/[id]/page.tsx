@@ -1,13 +1,15 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 export default async function ProfilePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -15,7 +17,7 @@ export default async function ProfilePage({
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       _count: {
         select: {

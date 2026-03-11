@@ -6,16 +6,17 @@ import Link from "next/link";
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: { q?: string; type?: string };
+  searchParams: Promise<{ q?: string; type?: string }>;
 }) {
+  const { q, type } = await searchParams;
   const session = await getServerSession(authOptions);
 
   if (!session) {
     redirect("/auth/signin");
   }
 
-  const query = searchParams.q || "";
-  const type = searchParams.type || "all";
+  const query = q || "";
+  const searchType = type || "all";
 
   let results: any = {
     knowledge: [],
@@ -26,7 +27,7 @@ export default async function SearchPage({
 
   if (query) {
     const res = await fetch(
-      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/search?q=${encodeURIComponent(query)}&type=${type}`,
+      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/search?q=${encodeURIComponent(query)}&type=${searchType}`,
       {
         headers: {
           Cookie: `next-auth.session-token=${process.env.SESSION_TOKEN || ""}`,
@@ -55,7 +56,7 @@ export default async function SearchPage({
             />
             <select
               name="type"
-              defaultValue={type}
+              defaultValue={searchType}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             >
               <option value="all">全部</option>
