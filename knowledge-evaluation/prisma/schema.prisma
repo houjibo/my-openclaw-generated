@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id                String            @id @default(cuid())
+  filename          String
+  fileType          String
+  fileSize          BigInt?
+  filePath          String?
+  rawContent        String?           @db.Text
+  structuredContent Json?
+  metadata          Json?
+  parseStatus       String            @default("pending")
+  parseError        String?           @db.Text
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+  
+  versions          DocumentVersion[]
+  evaluations       Evaluation[]
+  testSuites        TestSuite[]
+  vectorizedDocs    VectorizedDocument[]
+  
+  @@index([fileType])
+  @@index([parseStatus])
+}
+
+model DocumentVersion {
+  id                String            @id @default(cuid())
+  documentId        String
+  document          Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version           Int
+  content           String            @db.Text
+  structuredContent Json?
+  isOptimized       Boolean           @default(false)
+  optimizationPlan  Json?
+  createdAt         DateTime          @default(now())
+  
+  evaluations       Evaluation[]
+  vectorizedDocs    VectorizedDocument[]
+  
+  @@unique([documentId, version])
+  @@index([documentId])
+}
+
+model Evaluation {
+  id                String            @id @default(cuid())
+  documentId        String
+  document          Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentVersionId String?
+  documentVersion   DocumentVersion?  @relation(fields: [documentVersionId], references: [id], onDelete: SetNull)
+
+  overallScore      Decimal           @db.Decimal(5, 2)
+  intrinsicScore    Decimal           @db.Decimal(5, 2)
+  structuralScore   Decimal           @db.Decimal(5, 2)
+  consumptionScore  Decimal           @db.Decimal(5, 2)
+  metrics           Json
+
+  evaluatedAt       DateTime          @default(now())
+  evaluationTimeMs  Int?
+
+  suggestions       OptimizationSuggestion[]
+
+  @@index([documentId])
+  @@index([overallScore])
+}
+
+model OptimizationSuggestion {
+  id                String            @id @default(cuid())
+  evaluationId      String
+  evaluation        Evaluation        @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  category          String
+  subcategory       String
+  severity          String
+  description       String            @db.Text
+  currentValue      Json?
+  suggestedValue    Json?
+  autoApplicable    Boolean           @default(false)
+  priority          Int
+
+  applied           Boolean           @default(false)
+  appliedAt         DateTime?
+  appliedVersionId  String?
+
+  createdAt         DateTime          @default(now())
+
+  @@index([evaluationId])
+  @@index([category])
+  @@index([severity])
+  @@index([applied])
+}
+
+model TestSuite {
+  id                String            @id @default(cuid())
+  documentId        String
+  document          Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?           @db.Text
+  version           Int               @default(1)
+  generatedBy       String            @default("auto")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  questions         TestQuestion[]
+  evaluationRuns    EvaluationRun[]
+  
+  @@index([documentId])
+}
+
+model TestQuestion {
+  id                String            @id @default(cuid())
+  testSuiteId       String
+  testSuite         TestSuite         @relation(fields: [testSuiteId], references: [id], onDelete: Cascade)
+  type              String
+  question          String            @db.Text
+  expectedAnswer    String            @db.Text
+  referenceSections Json?
+  difficulty        String?
+  keywords          Json?
+  metadata          Json?
+  createdAt         DateTime          @default(now())
+  
+  testResults       TestResult[]
+  
+  @@index([testSuiteId])
+}
+
+model VectorizedDocument {
+  id                String            @id @default(cuid())
+  documentId        String
+  document          Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentVersionId String?
+  documentVersion   DocumentVersion?  @relation(fields: [documentVersionId], references: [id], onDelete: SetNull)
+  
+  version           String
+  embeddingModel    String
+  chunkingStrategy  Json?
+  totalChunks       Int
+  totalTokens       Int?
+  vectorizedAt      DateTime          @default(now())
+  
+  chunks            VectorChunk[]
+  evaluationRuns    EvaluationRun[]
+  
+  @@index([documentId])
+  @@index([documentVersionId])
+}
+
+model VectorChunk {
+  id                    String            @id @default(cuid())
+  vectorizedDocumentId  String
+  vectorizedDocument    VectorizedDocument @relation(fields: [vectorizedDocumentId], references: [id], onDelete: Cascade)
+  content               String            @db.Text
+  embedding             Unsupported("vector(1536)")?
+  position              Int
+  tokenCount            Int?
+  createdAt             DateTime          @default(now())
+  
+  @@index([vectorizedDocumentId])
+}
+
+model EvaluationRun {
+  id                    String            @id @default(cuid())
+  testSuiteId           String
+  testSuite             TestSuite         @relation(fields: [testSuiteId], references: [id], onDelete: Cascade)
+  vectorizedDocumentId  String
+  vectorizedDocument    VectorizedDocument @relation(fields: [vectorizedDocumentId], references: [id], onDelete: Cascade)
+  
+  totalQuestions        Int
+  passedQuestions       Int
+  passRate              Decimal           @db.Decimal(5, 4)
+  avgRelevanceScore     Decimal           @db.Decimal(5, 4)
+  metrics               Json?
+  
+  executedAt            DateTime          @default(now())
+  executionTimeMs       Int?
+  
+  testResults           TestResult[]
+  
+  @@index([testSuiteId])
+  @@index([vectorizedDocumentId])
+}
+
+model TestResult {
+  id                String            @id @default(cuid())
+  evaluationRunId   String
+  evaluationRun     EvaluationRun     @relation(fields: [evaluationRunId], references: [id], onDelete: Cascade)
+  questionId        String
+  question          TestQuestion      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  retrieved         Boolean
+  retrievedChunks   Json?
+  relevanceScore    Decimal           @db.Decimal(5, 4)
+  passed            Boolean
+
+  createdAt         DateTime          @default(now())
+
+  @@unique([evaluationRunId, questionId])
+  @@index([evaluationRunId])
+  @@index([questionId])
+}
+
+model VersionComparison {
+  id                      String            @id @default(cuid())
+  documentId              String
+  sourceVersionId         String
+  targetVersionId         String
+
+  intrinsicDiff           Json
+  structuralDiff          Json
+  consumptionDiff         Json
+  overallScoreDiff        Decimal           @db.Decimal(5, 2)
+
+  improvements            Json
+  regressions             Json
+  unchanged               Json
+
+  comparedAt              DateTime          @default(now())
+
+  @@index([documentId])
+  @@index([sourceVersionId])
+  @@index([targetVersionId])
+}
+
+model EvaluationComparison {
+  id                      String            @id @default(cuid())
+  documentId              String
+  baseEvaluationRunId     String
+  comparisonEvaluationRunId String
+
+  accuracyDiff            Decimal           @db.Decimal(5, 4)
+  recallDiff              Decimal           @db.Decimal(5, 4)
+  f1ScoreDiff             Decimal           @db.Decimal(5, 4)
+  passRateDiff            Decimal           @db.Decimal(5, 4)
+
+  detailedMetrics         Json
+
+  comparedAt              DateTime          @default(now())
+
+  @@index([documentId])
+}
