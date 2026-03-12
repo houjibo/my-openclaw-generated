@@ -1,4 +1,4 @@
-version: '3.8'
+version: '2.35'
 
 services:
   app:
@@ -10,31 +10,47 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/knowledge_evaluation?schema=public
       - NODE_ENV=production
+      # Embedding Provider Configuration
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
+      # OpenAI Configuration
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      - OPENAI_LLM_MODEL=${OPENAI_LLM_MODEL:-gpt-4-turbo-preview}
+      # Ollama Configuration (optional)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-qwen-embedding:0.6b}
+      # File Upload Configuration
       - UPLOAD_DIR=/app/uploads
-      - MAX_FILE_SIZE=52428800
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-52428800}
     volumes:
       - uploads:/app/uploads
       - cache:/app/cache
     depends_on:
-      db:
+      - db:
         condition: service_healthy
     restart: unless-stopped
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   db:
     image: pgvector/pgvector:pg16
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=knowledge_evaluation
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-knowledge_evaluation}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,7 +60,7 @@ services:
 
   # 可选: Nginx 反向代理
   nginx:
-    image: nginx:alpine
+    image: nginx:1.25-alpine
     ports:
       - "80:80"
       - "443:443"
@@ -52,15 +68,21 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      - app
+      - app:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - app-network
+    profiles:
+      - nginx
 
 volumes:
   postgres_data:
+    driver: local
   uploads:
+    driver: local
   cache:
+    driver: local
 
 networks:
   app-network:
