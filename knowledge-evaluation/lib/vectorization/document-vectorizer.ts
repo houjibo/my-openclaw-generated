@@ -29,14 +29,114 @@ export interface VectorizationResult {
   chunks: Chunk[];
 }
 
-export class DocumentVectorizer {
+interface EmbeddingClient {
+  generateEmbeddings(texts: string[]): Promise<number[][]>;
+  getDimension(): number;
+}
+
+class OpenAIEmbeddingClient implements EmbeddingClient {
   private client: OpenAI;
-  private defaultModel: string;
+  private model: string;
 
   constructor() {
     this.client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+    this.model = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
+  }
+
+  async generateEmbeddings(texts: string[]): Promise<number[][]> {
+    const batchSize = 100;
+    const results: number[][] = [];
+
+    for (let i = 0; i < texts.length; i += batchSize) {
+      const batch = texts.slice(i, i + batchSize);
+      const response = await this.client.embeddings.create({
+        model: this.model,
+        input: batch,
+      });
+
+      batch.forEach((_, index) => {
+        results.push(response.data[index].embedding);
+      });
+    }
+
+    return results;
+  }
+
+  getDimension(): number {
+    // OpenAI text-embedding-3-small: 1536
+    return 1536;
+  }
+}
+
+class OllamaEmbeddingClient implements EmbeddingClient {
+  private baseUrl: string;
+  private model: string;
+
+  constructor() {
+    this.baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    this.model = process.env.EMBEDDING_MODEL || 'qwen-embedding:0.6b';
+  }
+
+  async generateEmbeddings(texts: string[]): Promise<number[][]> {
+    const results: number[][] = [];
+
+    for (const text of texts) {
+      const response = await fetch(`${this.baseUrl}/api/embed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          input: text,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      results.push(data.embedding);
+    }
+
+    return results;
+  }
+
+  async getDimension(): Promise<number> {
+    // 通过实际请求获取向量维度
+    const response = await fetch(`${this.baseUrl}/api/embed`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: this.model,
+        input: 'test',
+      }),
+    });
+
+    const data = await response.json();
+    return data.embedding.length;
+  }
+}
+
+export class DocumentVectorizer {
+  private client: EmbeddingClient;
+  private defaultModel: string;
+  private embeddingProvider: 'openai' | 'ollama';
+
+  constructor() {
+    this.embeddingProvider = (process.env.EMBEDDING_PROVIDER as 'openai' | 'ollama') || 'openai';
+
+    if (this.embeddingProvider === 'ollama') {
+      this.client = new OllamaEmbeddingClient();
+    } else {
+      this.client = new OpenAIEmbeddingClient();
+    }
+
     this.defaultModel = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
   }
 
@@ -61,6 +161,9 @@ export class DocumentVectorizer {
       chunksWithTokens,
       embeddingModel
     );
+
+    // 4. 获取向量维度
+    const embeddingDimension = await this.client.getDimension();
 
     // 4. 获取文档版本
     const document = await prisma.document.findUnique({
@@ -87,6 +190,7 @@ export class DocumentVectorizer {
         version: new Date().toISOString(),
         embeddingModel,
         chunkingStrategy: options.chunkingStrategy as any,
+        embeddingDimension,
         totalChunks: chunksWithEmbeddings.length,
         totalTokens: chunksWithEmbeddings.reduce(
           (sum, chunk) => sum + (chunk.tokenCount || 0),
@@ -246,28 +350,15 @@ export class DocumentVectorizer {
     chunks: Chunk[],
     model: string
   ): Promise<Chunk[]> {
-    const batchSize = 100; // OpenAI限制每次最多100个文本
-    const results: Chunk[] = [];
-
-    for (let i = 0; i < chunks.length; i += batchSize) {
-      const batch = chunks.slice(i, i + batchSize);
-      const texts = batch.map((chunk) => chunk.content);
-
-      const response = await this.client.embeddings.create({
-        model,
-        input: texts,
-      });
-
-      batch.forEach((chunk, index) => {
-        results.push({
-          ...chunk,
-          embedding: response.data[index].embedding,
-        });
-      });
-    }
-
-    return results;
-  }
+    return this.client.generateEmbeddings(
+      chunks.map((chunk) => chunk.content)
+    ).then((embeddings) => {
+      return chunks.map((chunk, index) => ({
+        ...chunk,
+        embedding: embeddings[index],
+      }));
+    });
+  });
 
   async searchSimilar(
     query: string,
@@ -275,12 +366,8 @@ export class DocumentVectorizer {
     topK: number = 5
   ): Promise<Array<{ chunk: Chunk; similarity: number }>> {
     // 生成查询的embedding
-    const queryEmbedding = await this.client.embeddings.create({
-      model: this.defaultModel,
-      input: query,
-    });
-
-    const queryVector = queryEmbedding.data[0].embedding;
+    const embeddings = await this.client.generateEmbeddings([query]);
+    const queryVector = embeddings[0];
 
     // 执行向量相似度搜索
     const results = await prisma.$queryRaw`

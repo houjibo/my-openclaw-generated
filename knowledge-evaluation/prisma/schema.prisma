@@ -141,6 +141,7 @@ model VectorizedDocument {
   
   version           String
   embeddingModel    String
+  embeddingDimension Int
   chunkingStrategy  Json?
   totalChunks       Int
   totalTokens       Int?
