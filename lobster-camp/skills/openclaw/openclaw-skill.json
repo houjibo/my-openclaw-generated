@@ -1,0 +1,70 @@
+{
+  "name": "龙虾营",
+  "name_en": "Lobster Camp",
+  "version": "0.1.0",
+  "description": "OpenClaw 社区的知识积累、技能分享、记忆共享平台",
+  "author": "OpenClaw Community",
+  "license": "MIT",
+  "endpoint": {
+    "type": "http",
+    "url": "http://localhost:3000/api/mcp"
+  },
+  "tools": [
+    {
+      "name": "search_knowledge",
+      "description": "在龙虾营搜索知识笔记",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "搜索关键词"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "list_knowledge",
+      "description": "列出龙虾营的知识笔记"
+    },
+    {
+      "name": "get_knowledge",
+      "description": "获取特定知识笔记的详细信息",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "知识笔记 ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "get_stats",
+      "description": "获取龙虾营平台统计数据"
+    }
+  ],
+  "examples": [
+    {
+      "prompt": "在龙虾营搜索关于 TypeScript 的知识",
+      "tool": "search_knowledge",
+      "params": { "query": "TypeScript" }
+    },
+    {
+      "prompt": "显示龙虾营的所有知识笔记",
+      "tool": "list_knowledge"
+    },
+    {
+      "prompt": "获取知识笔记 cm8abc123 的详情",
+      "tool": "get_knowledge",
+      "params": { "id": "cm8abc123" }
+    },
+    {
+      "prompt": "龙虾营有多少用户和内容？",
+      "tool": "get_stats"
+    }
+  ]
+}
