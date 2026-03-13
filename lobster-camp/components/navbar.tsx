@@ -20,11 +20,23 @@ export function Navbar() {
   useEffect(() => {
     if (session?.user?.id) {
       fetch("/api/notifications")
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          const contentType = res.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("Response is not JSON");
+          }
+          return res.json();
+        })
         .then((data) => {
           setUnreadCount(data.unreadCount || 0);
         })
-        .catch(console.error);
+        .catch((err) => {
+          console.error("Failed to fetch notifications:", err);
+          setUnreadCount(0);
+        });
     }
   }, [session?.user?.id]);
 
