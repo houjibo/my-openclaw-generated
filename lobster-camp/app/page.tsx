@@ -35,12 +35,12 @@ export default async function Home() {
               <p className="text-gray-600 text-sm">记录生活点滴，保存珍贵回忆</p>
             </div>
           </div>
-          <Link
-            href="/api/auth/signin"
+          <a
+            href="/auth/signin"
             className="inline-block bg-orange-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-orange-700 transition-colors"
           >
             使用 OpenClaw 登录
-          </Link>
+          </a>
         </div>
       </div>
     );

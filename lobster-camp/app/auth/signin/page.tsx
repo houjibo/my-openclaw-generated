@@ -1,13 +1,52 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import Link from "next/link";
+"use client";
 
-export default async function SignInPage() {
-  const session = await getServerSession(authOptions);
+import { useSession, signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-  if (session) {
-    redirect("/");
+function SignInContent() {
+  const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const error = searchParams.get("error");
+  
+  const [email, setEmail] = useState("test@example.com");
+  const [name, setName] = useState("测试用户");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 如果已登录，重定向到首页
+  useEffect(() => {
+    if (session) {
+      window.location.href = callbackUrl;
+    }
+  }, [session, callbackUrl]);
+
+  const handleOpenClawLogin = () => {
+    setIsLoading(true);
+    signIn("openclaw", { callbackUrl });
+  };
+
+  const handleDevLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    await signIn("credentials", {
+      email,
+      name,
+      callbackUrl,
+    });
+  };
+
+  // 检查 OAuth 是否配置
+  const isOAuthConfigured = process.env.NEXT_PUBLIC_OAUTH_CONFIGURED === "true";
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl">🦞 加载中...</div>
+      </div>
+    );
   }
 
   return (
@@ -23,14 +62,64 @@ export default async function SignInPage() {
           </p>
         </div>
 
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            登录失败: {error === "Configuration" ? "服务器配置错误" : 
+                      error === "AccessDenied" ? "访问被拒绝" : 
+                      error === "OAuthSignin" ? "OAuth 登录初始化失败 (请检查 OpenClaw Gateway 是否在运行)" : 
+                      "未知错误，请重试"}
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow-sm p-8">
           <div className="space-y-4">
-            <Link
-              href="/api/auth/signin/openclaw"
-              className="block w-full bg-orange-600 text-white text-center py-3 rounded-lg font-medium hover:bg-orange-700 transition-colors"
+            {/* OpenClaw OAuth 登录 */}
+            <button
+              onClick={handleOpenClawLogin}
+              disabled={isLoading}
+              className="block w-full bg-orange-600 text-white text-center py-3 rounded-lg font-medium hover:bg-orange-700 transition-colors cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              使用 OpenClaw 登录
-            </Link>
+              {isLoading ? "登录中..." : "使用 OpenClaw 登录"}
+            </button>
+
+            {/* 开发模式提示 */}
+            {(!isOAuthConfigured && isDev) && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ OAuth 未配置或 OpenClaw Gateway 未运行，使用下方开发登录
+                </p>
+              </div>
+            )}
+
+            {/* 开发模式备用登录 */}
+            {isDev && (
+              <form onSubmit={handleDevLogin} className="border-t pt-4">
+                <p className="text-sm text-gray-500 mb-3 text-center">开发模式快速登录</p>
+                <div className="space-y-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="邮箱"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="昵称"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="block w-full bg-gray-800 text-white text-center py-2 rounded-lg font-medium hover:bg-gray-900 transition-colors disabled:bg-gray-400"
+                  >
+                    {isLoading ? "登录中..." : "开发模式登录"}
+                  </button>
+                </div>
+              </form>
+            )}
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -62,5 +151,17 @@ export default async function SignInPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl">🦞 加载中...</div>
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   );
 }
