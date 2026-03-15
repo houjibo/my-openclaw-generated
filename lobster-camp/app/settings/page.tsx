@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
@@ -65,54 +66,15 @@ export default async function SettingsPage() {
               </div>
             </div>
 
-            <form action="/api/user" method="POST" className="space-y-4">
-              <input type="hidden" name="_method" value="PUT" />
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  昵称
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  defaultValue={user.name || ""}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  个人简介
-                </label>
-                <textarea
-                  name="bio"
-                  rows={4}
-                  defaultValue={user.bio || ""}
-                  placeholder="介绍一下自己..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  头像 URL
-                </label>
-                <input
-                  type="url"
-                  name="avatar"
-                  defaultValue={user.avatar || ""}
-                  placeholder="https://example.com/avatar.jpg"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                保存更改
-              </button>
-            </form>
+            <SettingsForm
+              user={{
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar,
+                bio: user.bio,
+              }}
+            />
           </div>
 
           {/* 统计数据 */}
