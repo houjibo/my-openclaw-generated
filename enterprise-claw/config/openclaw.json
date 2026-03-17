@@ -1,0 +1,89 @@
+{
+  "tools": {
+    "profile": "minimal",
+    "allow": [
+      "read",
+      "write",
+      "edit",
+      "web_search",
+      "browser",
+      "exec"
+    ],
+    "deny": [
+      "message"
+    ],
+    "exec": {
+      "security": "allowlist",
+      "safeBins": [
+        "git",
+        "curl",
+        "npm",
+        "node",
+        "pnpm"
+      ],
+      "ask": "on-miss",
+      "elevated": {
+        "allowFrom": [
+          "your-user-id"
+        ]
+      }
+    },
+    "byProvider": {
+      "modelstudio/*": {
+        "allow": [
+          "read",
+          "write",
+          "web_search",
+          "browser"
+        ]
+      },
+      "zai/*": {
+        "allow": [
+          "read",
+          "write"
+        ]
+      }
+    }
+  },
+  "sandbox": {
+    "security": "strict",
+    "workspaceOnly": true
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "load": {
+        "extraDirs": [
+          "./hooks",
+          "./workspace/hooks"
+        ]
+      },
+      "handlers": [
+        {
+          "event": "command",
+          "module": "./hooks/security-guard/handler.ts"
+        },
+        {
+          "event": "command",
+          "module": "./hooks/audit-logger/handler.ts"
+        }
+      ]
+    }
+  },
+  "approvals": {
+    "mode": "always",
+    "forTools": [
+      "exec",
+      "write",
+      "edit"
+    ]
+  },
+  "media": {
+    "scope": "workspace"
+  },
+  "web": {
+    "search": {
+      "provider": "brave"
+    }
+  }
+}

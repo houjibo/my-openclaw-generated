@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "description": "企业安全策略配置",
+  "dangerousCommands": [
+    "rm -rf",
+    "dd if=/dev/zero",
+    "dd of=",
+    "mkfs",
+    "mklabel",
+    "chmod 777",
+    "chown root",
+    "curl | bash",
+    "curl | sh",
+    "wget | bash",
+    "wget | sh",
+    ":(){ :|:& };:",
+    "kill -9",
+    "pkill -9",
+    "shutdown",
+    "reboot",
+    "halt",
+    "poweroff"
+  ],
+  "sensitivePaths": [
+    "/etc/",
+    "/usr/",
+    "/System/",
+    "/Library/",
+    "/private/",
+    "/root/",
+    "/boot/",
+    "/dev/",
+    "api-keys",
+    "secrets",
+    ".env",
+    ".npmrc",
+    ".gitconfig",
+    "id_rsa",
+    "id_ed25519"
+  ],
+  "sensitivePatterns": {
+    "API_KEY": "[A-Za-z0-9]{32,}",
+    "PASSWORD": "password['\":\\s]+[^\\s]{8,}",
+    "PRIVATE_KEY": "-----BEGIN (RSA |EC )?PRIVATE KEY-----",
+    "AWS_KEY": "AKIA[0-9A-Z]{16}",
+    "GITHUB_TOKEN": "gh[pousr]_[A-Za-z0-9_]{36,}",
+    "PHONE": "1[3-9]\\d{9}"
+  },
+  "allowedDomains": [
+    "github.com",
+    "npmjs.com",
+    "openclaw.ai",
+    "nvidia.com"
+  ],
+  "blockedDomains": [],
+  "auditSettings": {
+    "enabled": true,
+    "logLevel": "info",
+    "destination": "siem",
+    "siemEndpoint": "https://your-siem.com/api/audit",
+    "retention": "90d"
+  }
+}

@@ -2,6 +2,10 @@
 
 🦞 OpenClaw 用户的知识积累、技能分享、记忆共享平台
 
+[![GitHub](https://img.shields.io/badge/GitHub-houjibo/my--openclaw--generated-blue?logo=github)](https://github.com/houjibo/my-openclaw-generated)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.0-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+
 ## 功能特性
 
 ### 核心功能
